@@ -9,11 +9,11 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 from LoadData import LoadandProcessData
 
 batch_size = 64
-train_loader = LoadandProcessData(audio_dir = "drums/train/",
+train_loader = LoadandProcessData(audio_dir = "sc07/train/7",
                                   batch_size = batch_size)
 train_generator, n_batches = train_loader.batch_generator()
 
-valid_loader = LoadandProcessData(audio_dir = "drums/valid/",
+valid_loader = LoadandProcessData(audio_dir = "sc07/test/7",
                                   batch_size = batch_size)
 valid_generator, _ = valid_loader.batch_generator()
 
@@ -179,8 +179,8 @@ for e in range(1, n_epochs+1):
     ##### Save the model regularly #####
     if (e % save_every) == 0:
         print("Saving models...")
-        torch.save(G.state_dict(), "G" + "_after_"+str(n_epochs)+"_epochs.pt")
-        torch.save(D.state_dict(), "D" + "_after_"+str(n_epochs)+"_epochs.pt")
+        torch.save(G.state_dict(), "G" + str(n_epochs) + "_epochs.pt")
+        torch.save(D.state_dict(), "D" + str(n_epochs) + "_epochs.pt")
     
     ##### Sample generated audio regularly #####
     if (e % sample_every) == 0:
@@ -190,4 +190,4 @@ for e in range(1, n_epochs+1):
         z = torch.from_numpy(z).float().to(device) 
         sound = G(z).detach().cpu().numpy()
         sound = sound.reshape(sound.shape[2],)
-        librosa.output.write_wav("drums/sound"+"_after_"+str(n_epochs)+"_epochs.wav", sound, sr = 16000)
+        librosa.output.write_wav("audio_"+str(n_epochs)+"_epochs.wav", sound, sr = 16000)
