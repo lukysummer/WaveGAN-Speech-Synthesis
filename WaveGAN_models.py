@@ -10,11 +10,11 @@ class waveganGenerator(nn.Module):
         super(waveganGenerator, self).__init__()
         self.d = d
         self.dense = nn.Linear(100, 256*d)
-        self.deconv1 = nn.ConvTranspose1d(16*d, 8*d, kernel_size = 24, stride = 4, padding = 10)
-        self.deconv2 = nn.ConvTranspose1d(8*d, 4*d, kernel_size = 24, stride = 4, padding = 10)
-        self.deconv3 = nn.ConvTranspose1d(4*d, 2*d, kernel_size = 24, stride = 4, padding = 10)
-        self.deconv4 = nn.ConvTranspose1d(2*d, d, kernel_size = 24, stride = 4, padding = 10)
-        self.deconv5 = nn.ConvTranspose1d(d, 1, kernel_size = 24, stride = 4, padding = 10)
+        self.deconv1 = nn.ConvTranspose1d(16*d, 8*d, kernel_size = 25, stride = 4, padding = 11, output_padding = 1)
+        self.deconv2 = nn.ConvTranspose1d(8*d, 4*d, kernel_size = 25, stride = 4, padding = 11, output_padding = 1)
+        self.deconv3 = nn.ConvTranspose1d(4*d, 2*d, kernel_size = 25, stride = 4, padding = 11, output_padding = 1)
+        self.deconv4 = nn.ConvTranspose1d(2*d, d, kernel_size = 25, stride = 4, padding = 11, output_padding = 1)
+        self.deconv5 = nn.ConvTranspose1d(d, 1, kernel_size = 25, stride = 4, padding = 11, output_padding = 1)
         
         for module in self.modules():
             if isinstance(module, nn.ConvTranspose1d) or isinstance(module, nn.Linear):
@@ -99,11 +99,11 @@ class waveganDiscriminator(nn.Module):
         self.d = d
         self.alpha = alpha
         
-        self.conv1 = nn.Conv1d(1, d, kernel_size = 24, stride = 4, padding = 10)
-        self.conv2 = nn.Conv1d(d, 2*d, kernel_size = 24, stride = 4, padding = 10)
-        self.conv3 = nn.Conv1d(2*d, 4*d, kernel_size = 24, stride = 4, padding = 10)
-        self.conv4 = nn.Conv1d(4*d, 8*d, kernel_size = 24, stride = 4, padding = 10)
-        self.conv5 = nn.Conv1d(8*d, 16*d, kernel_size = 24, stride = 4, padding = 10)
+        self.conv1 = nn.Conv1d(1, d, kernel_size = 25, stride = 4, padding = 11)
+        self.conv2 = nn.Conv1d(d, 2*d, kernel_size = 25, stride = 4, padding = 11)
+        self.conv3 = nn.Conv1d(2*d, 4*d, kernel_size = 25, stride = 4, padding = 11)
+        self.conv4 = nn.Conv1d(4*d, 8*d, kernel_size = 25, stride = 4, padding = 11)
+        self.conv5 = nn.Conv1d(8*d, 16*d, kernel_size = 25, stride = 4, padding = 11)
         self.dense = nn.Linear(256*d, 1)
         
         self.phase_shuffle = PhaseShuffle(shift_factor)
