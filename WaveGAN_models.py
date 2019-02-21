@@ -16,6 +16,11 @@ class waveganGenerator(nn.Module):
         self.deconv4 = nn.ConvTranspose1d(2*d, d, kernel_size = 24, stride = 4, padding = 10)
         self.deconv5 = nn.ConvTranspose1d(d, 1, kernel_size = 24, stride = 4, padding = 10)
         
+        for module in self.modules():
+            if isinstance(module, nn.ConvTranspose1d) or isinstance(module, nn.Linear):
+                nn.init.kaiming_normal_(module)
+        
+        
     def forward(self, z):            # z shape: (64, 100)
 
         z = self.dense(z)                      #(64, 256d)
@@ -102,6 +107,10 @@ class waveganDiscriminator(nn.Module):
         self.dense = nn.Linear(256*d, 1)
         
         self.phase_shuffle = PhaseShuffle(shift_factor)
+        
+        for module in self.modules():
+            if isinstance(module, nn.ConvTranspose1d) or isinstance(module, nn.Linear):
+                nn.init.kaiming_normal_(module)
         
         
     def forward(self, x):                                # x shape: (64, 1, 16384)
