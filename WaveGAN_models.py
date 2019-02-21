@@ -109,7 +109,7 @@ class waveganDiscriminator(nn.Module):
         self.phase_shuffle = PhaseShuffle(shift_factor)
         
         for module in self.modules():
-            if isinstance(module, nn.ConvTranspose1d) or isinstance(module, nn.Linear):
+            if isinstance(module, nn.Conv1d) or isinstance(module, nn.Linear):
                 nn.init.kaiming_normal_(module)
         
         
