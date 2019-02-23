@@ -18,7 +18,7 @@ class waveganGenerator(nn.Module):
         
         for module in self.modules():
             if isinstance(module, nn.ConvTranspose1d) or isinstance(module, nn.Linear):
-                nn.init.kaiming_normal_(module)
+                nn.init.xavier_uniform_(module)
         
         
     def forward(self, z):            # z shape: (64, 100)
@@ -110,7 +110,7 @@ class waveganDiscriminator(nn.Module):
         
         for module in self.modules():
             if isinstance(module, nn.Conv1d) or isinstance(module, nn.Linear):
-                nn.init.kaiming_normal_(module)
+                nn.init.xavier_uniform_(module)
         
         
     def forward(self, x):                                # x shape: (64, 1, 16384)
