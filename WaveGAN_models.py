@@ -10,12 +10,13 @@ class waveganGenerator(nn.Module):
         super(waveganGenerator, self).__init__()
         self.d = d
         self.dense = nn.Linear(100, 256*d)
-        self.deconv1 = nn.ConvTranspose1d(16*d, 8*d, kernel_size=24, stride=4, padding=11)
-        self.deconv2 = nn.ConvTranspose1d(8*d, 4*d, kernel_size=24, stride=4, padding=11)
-        self.deconv3 = nn.ConvTranspose1d(4*d, 2*d, kernel_size=24, stride=4, padding=11)
-        self.deconv4 = nn.ConvTranspose1d(2*d, d, kernel_size=24, stride=4, padding=11)
-        self.deconv5 = nn.ConvTranspose1d(d, 1, kernel_size=24, stride=4, padding=11)
+        self.deconv1 = nn.ConvTranspose1d(16*d, 8*d, kernel_size=24, stride=4, padding=10)
+        self.deconv2 = nn.ConvTranspose1d(8*d, 4*d, kernel_size=24, stride=4, padding=10)
+        self.deconv3 = nn.ConvTranspose1d(4*d, 2*d, kernel_size=24, stride=4, padding=10)
+        self.deconv4 = nn.ConvTranspose1d(2*d, d, kernel_size=24, stride=4, padding=10)
+        self.deconv5 = nn.ConvTranspose1d(d, 1, kernel_size=24, stride=4, padding=10)
         
+        ### Initialize weights ###
         for module in self.modules():
             if isinstance(module, nn.ConvTranspose1d) or isinstance(module, nn.Linear):
                 nn.init.xavier_uniform_(module.weight.data)
@@ -58,7 +59,7 @@ class PhaseShuffle(nn.Module):
         
         # k_list = [-shift_factor, -shift_factor+1, ..., 0, ..., shift_factor-1, shift_factor]
         k_list = torch.Tensor(x.shape[0]).random_(0, 2*self.shift_factor + 1) - self.shift_factor
-        k_list = k_list.numpy().astype(int)    
+        k_list = k_list.numpy().astype(int)
         
         k_map = {}  # 5 items
         for sample_idx, k in enumerate(k_list):
@@ -104,6 +105,7 @@ class waveganDiscriminator(nn.Module):
         self.dense = nn.Linear(256*d, 1)
         self.phase_shuffle = PhaseShuffle(shift_factor)
         
+        ### Initialize weights ###
         for module in self.modules():
             if isinstance(module, nn.Conv1d) or isinstance(module, nn.Linear):
                 nn.init.xavier_uniform_(module.weight.data)
