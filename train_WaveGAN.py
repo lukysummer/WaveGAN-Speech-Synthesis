@@ -4,28 +4,24 @@ import torch
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-
 ############################# 1. LOAD AUDIO DATA ##############################
 from LoadData import LoadandProcessData
 
 batch_size = 64
-train_loader = LoadandProcessData(audio_dir = "sc07/train/7",
+train_loader = LoadandProcessData(audio_dir = "sc09/train/3",
                                   batch_size = batch_size)
 train_generator, n_batches = train_loader.batch_generator()
 
-valid_loader = LoadandProcessData(audio_dir = "sc07/test/7",
-                                  batch_size = batch_size)
-valid_generator, _ = valid_loader.batch_generator()
-
+print("Number of batches: ", n_batches)
 
 
 ##################### 2. CONSTRUCT G & D MODEL INSTANCES ######################
 from WaveGAN_models import waveganGenerator, waveganDiscriminator
 
-G = waveganGenerator(d = 64).to(device)
-D = waveganDiscriminator(d = 64).to(device)
-G.load_state_dict(torch.load("G.pt"))
-D.load_state_dict(torch.load("D.pt"))
+G = waveganGenerator(d = 32).to(device)
+D = waveganDiscriminator(d = 32).to(device)
+#G.load_state_dict(torch.load("G.pt"))
+#D.load_state_dict(torch.load("D.pt"))
 
 print("G & D Models Constructed.\n")
 
@@ -64,7 +60,6 @@ def gradientPenalty(D, x, z, batch_size, device, lmbda = 10.0):
     return gradient_penalty
     
 
-
 ######################### 7. DEFINE DISCRIMINATOR LOSS ########################
 def DiscriminatorLoss(D, G, x, z, batch_size, device, compute_grad = False):
     
@@ -97,7 +92,6 @@ def DiscriminatorLoss(D, G, x, z, batch_size, device, compute_grad = False):
     return D_loss, D_Wasserstein
 
 
-
 ########################### 8. DEFINE GENERATOR LOSS ##########################
 def GeneratorLoss(G, D, z, device, compute_grad = False):
     G.zero_grad()
@@ -113,14 +107,14 @@ def GeneratorLoss(G, D, z, device, compute_grad = False):
     return G_loss
     
     
-
 ############################# 9. TRAIN THE NETWORK ############################
 from torch import optim
 
-n_epochs = 10
+n_epochs = 50
 D_updates_per_G_update = 5  # For each iteration, update G 1 time & update D 5 times
-save_every = 5
-sample_every = 5
+print_every = 7
+save_every = 20
+sample_every = 2
 
 lr = 0.001
 G_optimizer = optim.Adam(G.parameters(), lr, [0.5, 0.9])
@@ -133,19 +127,13 @@ D.train()
 for e in range(1, n_epochs+1):
     
     train_iter = iter(train_generator)
-    valid_iter = iter(valid_generator)
 
-    #for i in range(10): 
     for i in range(n_batches): 
-        
         ##### 1. Obtain input x & latent vector z #####
-        x = next(train_iter)['X']
-        x = torch.from_numpy(x).float().to(device)
-        
-        valid_x = next(valid_iter)['X']   
-        valid_x = torch.from_numpy(valid_x).float().to(device)
+        x = next(train_iter)[0].float().to(device)
         
         ##### 2. Update D ######
+        D.train()
         for _ in range(D_updates_per_G_update):
     
             z = np.random.uniform(-1, 1, size = (batch_size, 100))
@@ -155,12 +143,10 @@ for e in range(1, n_epochs+1):
             D_loss, D_wasserstein = DiscriminatorLoss(D, G, x, z, batch_size, device, 
                                                       compute_grad = True)
             D_optimizer.step()
-            
-            # D Validation #
-            D_loss_valid, D_wasserstein_valid = DiscriminatorLoss(D, G, valid_x, z, batch_size, device, 
-                                                                  compute_grad = False)
-        
+           
         ##### 3. Update G #####
+        D.eval()
+        
         z = np.random.uniform(-1, 1, size = (batch_size, 100))
         z = torch.from_numpy(z).float().to(device)
    
@@ -168,26 +154,26 @@ for e in range(1, n_epochs+1):
         G_loss = GeneratorLoss(G, D, z, device, compute_grad = True)
         G_optimizer.step()
         
-        # G Validation #
-        G_loss_valid = GeneratorLoss(G, D, z, device, compute_grad = False)
-
-    ##### Monitor results at each epoch #####
-    losses.append((D_loss.item(), G_loss.item()))
-    print('Epoch [{:5d}/{:5d}] | D_loss: {:6.6f} | D_loss_valid: {:6.6f}'.format(
-            e, n_epochs, D_loss.item(), D_loss_valid.item()))
+        ##### 4. Monitor results #####
+        if (i % print_every) == 0:
+            losses.append((D_loss.item(), G_loss.item()))
+            print('Epoch [{:5d}/{:5d}] | D_loss: {:6.6f}'.format(e, n_epochs, D_loss.item()))
     
-    ##### Save the model regularly #####
+    ##### 5. Save the model regularly #####
     if (e % save_every) == 0:
-        print("Saving models...")
-        torch.save(G.state_dict(), "G" + str(n_epochs) + "_epochs.pt")
-        torch.save(D.state_dict(), "D" + str(n_epochs) + "_epochs.pt")
+        G_model_dir = "sc09/saved_models/3_G_Epoch_" + str(e) + ".pt"
+        torch.save(G.state_dict(), G_model_dir)
+        D_model_dir = "sc09/saved_models/3_D_Epoch_" + str(e) + ".pt"
+        torch.save(D.state_dict(), D_model_dir)
+        print("Saved models at: ", G_model_dir)
     
-    ##### Sample generated audio regularly #####
+    ##### 6. Sample generated audio regularly #####
     if (e % sample_every) == 0:
-        print("Saving sample audio...\n")
         G.eval()
         z = np.random.uniform(-1, 1, size = (1, 100))
         z = torch.from_numpy(z).float().to(device) 
         sound = G(z).detach().cpu().numpy()
         sound = sound.reshape(sound.shape[2],)
-        librosa.output.write_wav("audio_"+str(n_epochs)+"_epochs.wav", sound, sr = 16000)
+        save_audio_dir = "sc09/generated_audios/3_Epoch_" + str(e) + ".wav"
+        librosa.output.write_wav(save_audio_dir, sound, sr = 16000)
+        print("Saved sample audio at: ", save_audio_dir)
