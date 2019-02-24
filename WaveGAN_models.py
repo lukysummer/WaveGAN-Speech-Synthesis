@@ -1,9 +1,6 @@
-import numpy as np
 import torch
 from torch import nn
 import torch.nn.functional as F
-
-device = "cuda" if torch.cuda.is_available() else "cpu"
 
 ############################### GENERATOR MODEL ###############################
 class waveganGenerator(nn.Module):
@@ -40,6 +37,56 @@ class waveganGenerator(nn.Module):
 
 
 
+################### PHASE SHUFFLE MODEL FOR DISCRIMINATOR #####################
+############# (taken from:  https://github.com/jtcramer/wavegan) ##############
+class PhaseShuffle(nn.Module):
+    '''
+    Performs phase shuffling (to be used by Discriminator ONLY) by: 
+       -Shifting feature axis of a 3D tensor by a random integer in [-n, n] 
+       -Performing reflection padding where necessary
+    '''
+    def __init__(self, shift_factor):
+        
+        super(PhaseShuffle, self).__init__()
+        self.shift_factor = shift_factor
+        
+        
+    def forward(self, x):    # x shape: (64, 1, 16384)
+        # Return x if phase shift is disabled
+        if self.shift_factor == 0:
+            return x
+        
+        # k_list = [-shift_factor, -shift_factor+1, ..., 0, ..., shift_factor-1, shift_factor]
+        k_list = torch.Tensor(x.shape[0]).random_(0, 2*self.shift_factor + 1) - self.shift_factor
+        k_list = k_list.numpy().astype(int)    
+        
+        k_map = {}  # 5 items
+        for sample_idx, k in enumerate(k_list):
+            k = int(k) 
+            if k not in k_map:
+                k_map[k] = []
+            
+            k_map[k].append(sample_idx)
+            
+        shuffled_x = x.clone()
+        
+        for k, sample_idxs in k_map.items():
+            if k > 0:   # Remove the last k values & insert k left-paddings 
+                shuffled_x[sample_idxs] = F.pad(x[sample_idxs][..., :-k], 
+                                                pad = (k, 0), 
+                                                mode = 'reflect')
+            
+            else:       # 1. Remove the first k values & 2. Insert k right-paddings 
+                shuffled_x[sample_idxs] = F.pad(x[sample_idxs][..., abs(k):], 
+                                                  pad = (0, abs(k)), 
+                                                  mode = 'reflect')
+                    
+        assert shuffled_x.shape == x.shape, "{}, {}".format(shuffled_x.shape, x.shape)
+        
+        return shuffled_x
+        
+     
+
 ############################# DISCRIMINATOR MODEL #############################      
 class waveganDiscriminator(nn.Module):
     
@@ -48,7 +95,6 @@ class waveganDiscriminator(nn.Module):
         super(waveganDiscriminator, self).__init__()
         self.d = d
         self.alpha = alpha
-        self.shift_factor = shift_factor
         
         self.conv1 = nn.Conv1d(1, d, kernel_size = 25, stride = 4, padding = 11)
         self.conv2 = nn.Conv1d(d, 2*d, kernel_size = 25, stride = 4, padding = 11)
@@ -56,32 +102,11 @@ class waveganDiscriminator(nn.Module):
         self.conv4 = nn.Conv1d(4*d, 8*d, kernel_size = 25, stride = 4, padding = 11)
         self.conv5 = nn.Conv1d(8*d, 16*d, kernel_size = 25, stride = 4, padding = 11)
         self.dense = nn.Linear(256*d, 1)
+        self.phase_shuffle = PhaseShuffle(shift_factor)
         
         for module in self.modules():
             if isinstance(module, nn.Conv1d) or isinstance(module, nn.Linear):
                 nn.init.xavier_uniform_(module.weight.data)
-        
-        
-    ###### PHASE SHUFFLE ######
-    def phase_shuffle(self, audio_batch):
-        '''
-        Performs phase shuffling (to be used by Discriminator ONLY) by shifting 
-        each audio signal by a random number of sample in range 
-        [-shift_factor, shift_factor]
-        '''
-        audio_batch = audio_batch.detach().numpy().astype(int)
-        
-        for i, audio in enumerate(audio_batch):
-            print(audio[0].shape)
-            shift = np.random.choice(range(-1*self.shift_factor, self.shift_factor+1))
-            if shift > 0: # Remove the last k values & insert k left-paddings 
-                audio_batch[i] = np.pad(audio[0][:-shift], (shift, 0), mode = 'reflect').reshape(1, -1)
-            else:         # Remove the first k values & insert k right-paddings 
-                audio_batch[i] = np.pad(audio[0][abs(shift):], (0, abs(shift)), mode = 'reflect').reshape(1, -1)
-        
-        audio_batch = torch.from_numpy(audio_batch).float().to(device)
-        
-        return audio_batch
         
         
     def forward(self, x):                                # x shape: (64, 1, 16384)
