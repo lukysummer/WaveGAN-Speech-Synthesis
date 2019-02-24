@@ -4,7 +4,6 @@ import librosa
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 
-
 ############################ READ IN AUDIO DATA ###############################
 class LoadandProcessData():
     
@@ -36,6 +35,13 @@ class LoadandProcessData():
             signal = signal.astype(np.float32)
             signal /= 32768.
 
+        ##### 3. Pad the audio file to match its length with audio_length #####
+        if len(signal) < self.audio_length: 
+            delta = self.audio_length - len(signal)
+            signal = np.pad(signal, (0, delta), mode = 'edge')
+        else:
+            signal = signal[:self.audio_length]
+
         ##### 3. Reshape the signal #####
         n_channels = 1 if signal.ndim == 1 else signal.shape[1]        
         signal = signal.reshape(n_channels, signal.shape[0])
@@ -55,22 +61,13 @@ class LoadandProcessData():
                               for fname in file_names
                               if (fname.lower().endswith('.wav') or fname.lower().endswith('.mp3'))]
         
-        combined_audio = []
+        audios = []
         for audio_filepath in audio_filepath_list:
-            combined_audio.extend(self.decode_audio(audio_filepath))
-
-        combined_audio = np.concatenate(combined_audio)
-
-        n_audios = len(combined_audio)//self.audio_length
-        combined_audio = combined_audio[:n_audios*self.audio_length]
-
-        n_batches = n_audios//self.batch_size
-
-        all_audios = []
-        for i in range(0, len(combined_audio), self.audio_length):
-            all_audios.append(combined_audio[i:i+self.audio_length])
+            audios.append(self.decode_audio(audio_filepath))
         
-        data = TensorDataset(torch.from_numpy(np.array(all_audios)))
+        n_batches = len(audios)//self.batch_size
+
+        data = TensorDataset(torch.from_numpy(np.array(audios)))
         dataloader = DataLoader(data, batch_size = self.batch_size, shuffle = True, drop_last = True)
         
         return dataloader, n_batches
