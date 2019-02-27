@@ -7,10 +7,10 @@ This is my own implementation of WaveGAN using PyTorch, introduced in [this pape
 
 # Results
 
-Take a look at an example result of a synthesized audio [HERE](https://soundcloud.com/lucrece-summer/1-2-3-4-by-wavegan)
+✿ Take a look at an example of a synthesized audio! ✿ [HERE](https://soundcloud.com/lucrece-summer/1-2-3-4-by-wavegan)
 
 
-## Notes
+# Training Notes
 
 
 * While building the model, I chose hyperparameters suggested by the paper, EXCEPT the model size (d) :
