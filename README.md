@@ -1,4 +1,4 @@
-# WaveGAN Implementation in PyTorch
+# WaveGAN (PyTorch)
 
 <p align="center"><img src="images/waveform.jpg" height = "256"></p>
 
