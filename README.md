@@ -10,13 +10,13 @@ This is my own implementation of WaveGAN using PyTorch, introduced in [this pape
 ✿ Take a look at an example of a synthesized audio [HERE](https://soundcloud.com/lucrece-summer/1-2-3-4-by-wavegan)!✿
 
 
-# Training Notes
+# Additional Notes
 
 
 * While building the model, I chose hyperparameters suggested by the paper, EXCEPT the model size (d) :
 
 
-* **I reduced the model size (d) from 64 (suggested in the paper) to 32, and obtained recognizabel synthesis as early as Epoch 30.**
+* **I reduced the model size (d) from 64 (suggested in the paper) to 32, and obtained recognizable synthesis as early as Epoch 30.**
 
 
 * During training, I did not use any quantitative stopping criteria (as in the paper). I just used qualitative method of checking the synthesized audio.
