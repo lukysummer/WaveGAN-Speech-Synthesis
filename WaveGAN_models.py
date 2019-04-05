@@ -57,11 +57,13 @@ class PhaseShuffle(nn.Module):
         if self.shift_factor == 0:
             return x
         
-        # k_list = [-shift_factor, -shift_factor+1, ..., 0, ..., shift_factor-1, shift_factor]
+        # k_list: list of batch_size shift factors, randomly generated uniformly between [-shift_factor, shift_factor]
         k_list = torch.Tensor(x.shape[0]).random_(0, 2*self.shift_factor + 1) - self.shift_factor
         k_list = k_list.numpy().astype(int)
         
-        k_map = {}  # 5 items
+        # k_map: dict containing {each shift factor : list of batch indices with that shift factor} 
+        # e.g. if shift_factor = 1 & batch_size = 64, k_map = {-1:[0,2,30,...52], 0:[1,5,...,60], 1:[2,3,4,...,63]}
+        k_map = {}  
         for sample_idx, k in enumerate(k_list):
             k = int(k) 
             if k not in k_map:
